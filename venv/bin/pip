@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/Users/jamesplausin/Projects/grinding/Weeks 1-4/Project A-Weather Normalisation & Enrichment API/venv/bin/python3" "$0" "$@"
+'''exec' "/Users/jamesplausin/Projects/self dev prjs/Weeks 1-4/Project A-Weather Normalisation & Enrichment API/venv/bin/python3" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re
