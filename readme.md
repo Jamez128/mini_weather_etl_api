@@ -1,72 +1,104 @@
-1. High-Level Product Description
+🌦️ Weather Normalisation & Enrichment API
 
-A FastAPI microservice that fetches weather data from a 3rd-party API, normalises it into a clean internal schema, and exposes it through a simple, predictable API for downstream services or analytics.
+A production-style FastAPI microservice for fetching, normalising, validating, and exposing weather data.
 
-Core responsibilities
+🔧 Overview
 
-Fetch raw weather data from a configurable external API
+This service provides:
 
-Normalise fields:
+Current weather data fetched from a configurable 3rd-party API
 
-Units (°C vs °F, m/s vs km/h, etc.)
+Normalised & validated weather readings using strict Pydantic v2 schemas
 
-Naming (API-specific → standard internal naming)
+Conversion of temperature, wind speed, and pressure units into a consistent internal format
 
-Validate value ranges and required fields using Pydantic
+Error-handled, testable API endpoints suitable for downstream systems, ML pipelines, or analytics workflows
 
-Expose endpoints for:
+The project is intentionally engineered to reflect real-world backend/API + ML-preprocessing patterns, following clean code, modularity, and reliability standards.
 
-Current weather at a location
+🎯 Core Responsibilities
 
-Normalisation of arbitrary raw payloads (for later ML pipelines)
+Fetch raw weather data from an external provider (with timeouts & error handling)
 
-Handle errors gracefully and consistently
+Normalise:
 
-2. Non-Functional Goals (Engineering Focus)
+Units (°C/°F/K, m/s vs km/h vs mph)
 
-You want to hit your Week 1–4 bullets:
+Field names (provider-specific → internal schema)
 
-Python OOP, modules, error handling ✅
+Validate:
 
-PEP8, typing, docstrings, clean patterns ✅
+Temperature, humidity, pressure ranges
 
-Pydantic v2 schemas ✅
+Required fields
 
-pytest unit tests (fixtures, mocks) ✅
+Expose a clean, predictable API surface:
 
-Docker basics + project structure ✅
+/weather/current
 
-Git workflow ✅
+/weather/normalize
 
-So the spec will be slightly “over-engineered” compared to a toy project — on purpose.
+/weather/batch-normalize (optional stretch)
 
-3. API Design
+Provide reliability endpoints:
 
-Base path assumption: /api/v1
+/health/live
 
-3.1 Health Endpoints (tiny but realistic)
+/health/ready
 
-You’ll reuse this pattern in every future service.
+Maintain high engineering quality:
 
+PEP8, typing, docstrings
+
+pytest unit/integration tests
+
+Dockerised deployment
+
+🧱 Architecture & Directory Layout
+app/
+  main.py                     # App creation, router registration
+
+  api/
+    health.py                 # Health/liveness/readiness endpoints
+    weather.py                # Weather endpoints
+
+  core/
+    config.py                 # Settings (API keys, timeouts, env vars)
+    logging_config.py         # Logger setup
+
+  models/
+    location.py               # Location models
+    weather.py                # NormalizedWeather response model
+    raw_weather.py            # Raw incoming weather formats
+
+  services/
+    weather_provider.py       # External API integration + upstream calls
+    weather_normalizer.py     # Unit conversion, validation, normalization logic
+
+tests/
+  conftest.py
+  test_weather_normalizer.py
+  test_weather_provider.py
+  test_weather_api.py
+
+📡 API Design
+
+Base path: /api/v1 (implicit)
+
+1. Health Endpoints
 GET /health/live
 
-Purpose: “Is the process up?”
+Basic process uptime check.
 
-Response (200):
+Response
 
 { "status": "ok" }
 
 GET /health/ready
 
-Purpose: “Is the service ready to serve traffic?”
+Readiness probe (can later include external API reachability).
 
-For MVP:
-
-Option A: always returns ready.
-
-Option B (nicer): periodically check last successful call to external provider.
-
-Response:
+Response
 
 {
   "status": "ready",
@@ -75,40 +107,36 @@ Response:
   }
 }
 
-3.2 Current Weather Endpoint (Fetch + Normalise)
+2. Current Weather: Fetch + Normalise
 GET /weather/current
 
-Query params (Pydantic-validated via dependency):
+Supported query params
 
-Option 1 (city-based):
+Option A — City-based:
 
 city: str
 
-country_code: str | None = "SG"
+country_code: str = "SG"
 
-Option 2 (lat/lon-based, nicer for future ML):
+Option B — Coordinate-based:
 
 lat: float
 
 lon: float
 
-Pick the one you prefer, or support both.
+Process
 
-Process:
+Validate input
 
-Validate location input.
+Call external provider (with timeout)
 
-Call external API (with timeout).
+Convert raw payload → RawWeatherReading
 
-Receive raw JSON.
+Normalise → NormalizedWeather
 
-Convert raw JSON → RawWeatherReading Pydantic model (strict).
+Return structured JSON
 
-Convert RawWeatherReading → NormalizedWeather model.
-
-Return NormalizedWeather as JSON.
-
-NormalizedWeather schema (example):
+Example Response
 
 {
   "location": {
@@ -125,13 +153,13 @@ NormalizedWeather schema (example):
   "wind_direction_deg": 190,
   "pressure_hpa": 1007,
   "weather_code": "thunderstorms",
-  "source": "external_api_name"
+  "source": "external_api"
 }
 
 
-Error responses:
+Error Examples
 
-External API timeout:
+Timeout:
 
 {
   "error": "UPSTREAM_TIMEOUT",
@@ -139,22 +167,17 @@ External API timeout:
 }
 
 
-Invalid location parameters:
+Validation:
 
 {
   "error": "VALIDATION_ERROR",
   "message": "Invalid coordinates: lat must be between -90 and 90"
 }
 
-3.3 Normalisation-Only Endpoint (No External Fetch)
-
-This is particularly useful later for ETL/ML.
-
+3. Raw Normalisation Endpoint
 POST /weather/normalize
 
-Request body:
-
-Accepts a “raw payload” that mimics a common upstream structure:
+Accepts arbitrary raw weather payloads:
 
 {
   "temp": 302.15,
@@ -169,79 +192,49 @@ Accepts a “raw payload” that mimics a common upstream structure:
 }
 
 
-Response:
+Converts everything into internal canonical format.
 
-Same NormalizedWeather format as /weather/current, but source might be "client" or "raw_input".
+Behaviour Includes
 
-Behaviour:
+K/°F → °C
 
-Converts all units to your internal standard:
+km/h → m/s
 
-Temperature → °C
+Range validation (temp, humidity, pressure)
 
-Wind speed → m/s
+Error responses for corrupted or nonsensical values
 
-Validates allowable ranges:
-
-Temperature: e.g. -80 to +60°C
-
-Humidity: 0–100
-
-Pressure: 800–1100 hPa
-
-Returns errors if values are obviously nonsense.
-
-3.4 Optional: Batch Normalisation
-
-If you want a stretch goal:
-
+4. Batch Normalisation (Optional)
 POST /weather/batch-normalize
 
-Request:
+Request
 
 {
   "items": [
-    {
-      "id": "obs1",
-      "payload": { /* same as /weather/normalize */ }
-    },
-    {
-      "id": "obs2",
-      "payload": { /* ... */ }
-    }
+    { "id": "obs1", "payload": { ... } },
+    { "id": "obs2", "payload": { ... } }
   ]
 }
 
 
-Response:
+Response
 
 {
   "results": [
-    {
-      "id": "obs1",
-      "normalized": { /* NormalizedWeather */ },
-      "error": null
-    },
-    {
-      "id": "obs2",
-      "normalized": null,
-      "error": "VALIDATION_ERROR: humidity must be <= 100"
-    }
+    { "id": "obs1", "normalized": { ... }, "error": null },
+    { "id": "obs2", "normalized": null, "error": "VALIDATION_ERROR: humidity must be <= 100" }
   ]
 }
 
-4. Internal Data Models (Pydantic v2)
-
-You’ll likely want:
-
-# app/models/location.py
+📦 Pydantic Models (v2)
+Location
 class Location(BaseModel):
     lat: float
     lon: float
     city: str | None = None
     country_code: str | None = None
 
-# app/models/weather.py
+NormalizedWeather
 class NormalizedWeather(BaseModel):
     location: Location
     timestamp_utc: datetime
@@ -254,9 +247,7 @@ class NormalizedWeather(BaseModel):
     weather_code: str | None = None
     source: str
 
-
-For /weather/normalize input:
-
+RawWeatherInput
 class RawWeatherInput(BaseModel):
     temp: float
     temp_unit: Literal["celsius", "fahrenheit", "kelvin"] = "celsius"
@@ -268,148 +259,92 @@ class RawWeatherInput(BaseModel):
     lon: float
     timestamp: datetime
 
-5. Services & Architecture
+🔌 Services
+weather_provider.py
 
-Suggested layout:
+Build external API request
 
-app/
-  main.py
+Perform HTTP GET (with timeout)
 
-  api/
-    health.py         # /health endpoints
-    weather.py        # /weather endpoints
+Parse JSON
 
-  core/
-    config.py         # API keys, timeouts (from env)
-    logging_config.py # logging setup
+Map provider payload → internal raw model
 
-  models/
-    location.py
-    weather.py
-    raw_weather.py    # if you want provider-specific models
-
-  services/
-    weather_provider.py   # external API integration
-    weather_normalizer.py # unit conversions, validation logic
-
-5.1 weather_provider.py
-
-Responsibilities:
-
-Build URL/query for external weather API.
-
-Call using httpx or requests with timeout.
-
-Parse response JSON into a provider-specific Pydantic model (optional but nice).
-
-Map provider model → RawWeatherInput or directly → NormalizedWeather.
-
-5.2 weather_normalizer.py
-
-Responsibilities:
-
-Convert units:
-
-Kelvin → °C, °F → °C, etc.
-
-km/h → m/s, mph → m/s.
-
-Validate ranges.
-
-Construct NormalizedWeather.
-
-This separation is great for:
-
-Testing: you can test normalisation logic without network calls.
-
-Future: swapping to a different API provider is trivial.
-
-6. Error Handling & Logging
-Error Handling
-
-Use HTTPException from FastAPI for:
-
-Upstream timeout → 503 Service Unavailable.
-
-Invalid client payload → 422 (Pydantic catches this anyway).
-
-Wrap network calls in try/except:
+Handle:
 
 Timeout
 
 Connection errors
 
-Non-200 status codes
+Non-200 responses
 
-Logging
+weather_normalizer.py
 
-Set up a logger in core/logging_config.py and call it from services:
+Convert Kelvin/Fahrenheit → Celsius
 
-Log outbound requests:
+Convert km/h or mph → m/s
 
-URL, query, timeout, maybe correlation id.
+Validate numerical ranges
 
-Log failures with logger.error(...) + context.
+Construct a NormalizedWeather object
 
-In normal flows, keep logs at INFO.
+Separation ensures:
 
-7. Testing Strategy (pytest)
+Easy unit testing
 
-You want:
+Easy to swap weather providers
 
-7.1 Unit tests
+Cleaner API-layer logic
 
-tests/test_weather_normalizer.py
+🧪 Testing (pytest)
+Unit Tests
 
-Test temperature conversions (C/F/K).
+test_weather_normalizer.py
 
-Test wind speed conversions.
+temp conversions
 
-Test validation of out-of-range values.
+wind conversions
 
-tests/test_weather_provider.py
+range validations
 
-Use responses or httpx mocking to simulate API responses.
+test_weather_provider.py
 
-Test success, timeout, non-200 error.
+mock HTTP responses
 
-7.2 API tests
+simulate timeout / invalid payload
 
-Using FastAPI’s TestClient:
+API Tests
 
-/health/live → 200 + { "status": "ok" }
+Using FastAPI's TestClient:
 
-/weather/normalize:
+/health/live
 
-Valid payload → 200 with correct units.
+/weather/normalize
 
-Invalid payload (e.g. humidity 150) → 422 or 400 with clear error.
+valid input
 
-/weather/current:
+invalid ranges
 
-Ideally mock weather_provider so you don’t hit the real API.
+/weather/current
 
-Test location params validation.
+provider mocked
 
-7.3 Fixtures
+invalid params
 
-tests/conftest.py:
+Fixtures
 
-app fixture → returns FastAPI app instance.
+tests/conftest.py should define:
 
-client fixture → TestClient(app).
+app fixture
 
-8. Docker Requirements
+client fixture
 
-Simple once you have the app:
-
-Dockerfile (outline):
-
+🐳 Docker
+Dockerfile
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system deps if needed (curl, build-essential, etc.)
 RUN pip install --upgrade pip
 
 COPY requirements.txt .
@@ -421,9 +356,7 @@ ENV PYTHONUNBUFFERED=1
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
-
-.dockerignore:
-
+.dockerignore
 __pycache__
 *.pyc
 .venv
@@ -431,79 +364,43 @@ __pycache__
 tests
 .git
 
-
-You can add tests into the image later if you want, but for now just run them locally.
-
-9. Rough 2-Week Plan for Project A
-
-Assuming ~12h/week:
-
+📅 2-Week Build Plan (For Reference)
 Week 1
 
-Day 1–2:
+Implement app structure, main file, health endpoints
 
-Create repo, set up app/ structure, main.py, health endpoints.
+Add normaliser logic + unit tests
 
-Configure logging & basic config.
-
-Day 3–4:
-
-Implement NormalizedWeather and RawWeatherInput models.
-
-Implement weather_normalizer.py with unit conversions.
-
-Write pytest unit tests for normaliser.
-
-Weekend:
-
-Implement /weather/normalize endpoint + tests.
+Add /weather/normalize endpoint
 
 Week 2
 
-Day 1–2:
+Build provider service (external API)
 
-Implement weather_provider.py with external API integration.
+Add /weather/current
 
-Handle timeouts and errors.
+API tests + mocking
 
-Day 3–4:
+Dockerfile + README polish
 
-Implement /weather/current endpoint, wired through provider + normaliser.
+🤝 Contributing / Review
 
-Add API tests (mock provider).
+If you're iterating on this project:
 
-Weekend:
+Pull requests welcome
 
-Write Dockerfile, .dockerignore, README.
+Open issues for improvements
 
-Run container locally and hit endpoints with curl or httpie.
+Code reviews encouraged
 
-10. How I Can Help Next
+I can review:
 
-When you’ve got a first cut:
+File structure
 
-Paste:
+Normalisation accuracy
 
-Project tree
+Test style & mocking
 
-main.py
+Error handling design
 
-weather_normalizer.py
-
-weather_provider.py
-
-one router (weather.py)
-
-one or two test files
-
-I’ll go through and:
-
-Comment on structure, naming, typing
-
-Suggest stronger tests
-
-Point out any edge cases or error-handling gaps
-
-Suggest any “big-tech polish” improvements
-
-You can also ask for a similar spec for Project B (Text Cleaning) once you’re partway through or done with Project A.
+Docker best practices
