@@ -1,0 +1,130 @@
+{
+  "code": 0,
+  "data": {
+    "records": [
+      {
+        "date": "2025-12-05",
+        "updatedTimestamp": "2025-12-05T20:40:47+08:00",
+        "general": {
+          "temperature": {
+            "low": 24,
+            "high": 33,
+            "unit": "Degrees Celsius"
+          },
+          "relativeHumidity": {
+            "low": 60,
+            "high": 95,
+            "unit": "Percentage"
+          },
+          "forecast": {
+            "code": "TL",
+            "text": "Thundery Showers"
+          },
+          "validPeriod": {
+            "start": "2025-12-05T18:00:00+08:00",
+            "end": "2025-12-06T18:00:00+08:00",
+            "text": "6 PM 5 Dec to 6 PM 6 Dec"
+          },
+          "wind": {
+            "speed": {
+              "low": 15,
+              "high": 25
+            },
+            "direction": "N"
+          }
+        },
+        "periods": [
+          {
+            "timePeriod": {
+              "start": "2025-12-05T18:00:00+08:00",
+              "end": "2025-12-06T06:00:00+08:00",
+              "text": "6 pm 05 Dec to 6 am 06 Dec"
+            },
+            "regions": {
+              "west": {
+                "code": "LR",
+                "text": "Light Rain"
+              },
+              "east": {
+                "code": "CL",
+                "text": "Cloudy"
+              },
+              "central": {
+                "code": "CL",
+                "text": "Cloudy"
+              },
+              "south": {
+                "code": "LR",
+                "text": "Light Rain"
+              },
+              "north": {
+                "code": "CL",
+                "text": "Cloudy"
+              }
+            }
+          },
+          {
+            "timePeriod": {
+              "start": "2025-12-06T06:00:00+08:00",
+              "end": "2025-12-06T12:00:00+08:00",
+              "text": "6 am to Midday 06 Dec"
+            },
+            "regions": {
+              "west": {
+                "code": "PC",
+                "text": "Partly Cloudy (Day)"
+              },
+              "east": {
+                "code": "PC",
+                "text": "Partly Cloudy (Day)"
+              },
+              "central": {
+                "code": "PC",
+                "text": "Partly Cloudy (Day)"
+              },
+              "south": {
+                "code": "PC",
+                "text": "Partly Cloudy (Day)"
+              },
+              "north": {
+                "code": "PC",
+                "text": "Partly Cloudy (Day)"
+              }
+            }
+          },
+          {
+            "timePeriod": {
+              "start": "2025-12-06T12:00:00+08:00",
+              "end": "2025-12-06T18:00:00+08:00",
+              "text": "Midday to 6 pm 06 Dec"
+            },
+            "regions": {
+              "west": {
+                "code": "TL",
+                "text": "Thundery Showers"
+              },
+              "east": {
+                "code": "TL",
+                "text": "Thundery Showers"
+              },
+              "central": {
+                "code": "TL",
+                "text": "Thundery Showers"
+              },
+              "south": {
+                "code": "TL",
+                "text": "Thundery Showers"
+              },
+              "north": {
+                "code": "TL",
+                "text": "Thundery Showers"
+              }
+            }
+          }
+        ],
+        "timestamp": "2025-12-05T20:34:00+08:00"
+      }
+    ]
+  },
+  "errorMsg": ""
+}
