@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Literal, Optional
 from datetime import date, datetime
+from app.models.location import Location
 
 # ---- Canonical internal "raw" model ----
 
@@ -17,7 +18,7 @@ class RawWeatherInput(BaseModel):
     lon: Optional[float] = None
     timestamp: datetime
     forecast_description: Optional[str] = None
-    location: Optional[str] = None
+    location: Location
 
 # ---- NEA provider models (mirror JSON structure) ----
 

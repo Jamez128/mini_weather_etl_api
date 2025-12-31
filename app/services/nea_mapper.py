@@ -1,6 +1,7 @@
 from app.models.raw_weather import (
     RawWeatherInput,
     Nea24hForecastResponse,
+    Location
 )
 
 def map_nea_to_raw(nea: Nea24hForecastResponse) -> RawWeatherInput:
@@ -30,5 +31,10 @@ def map_nea_to_raw(nea: Nea24hForecastResponse) -> RawWeatherInput:
         pressure=None,
         timestamp=timestamp,
         forecast_description=forecast_description,
-        location=location
+        location=Location(
+            lat=1.3521,
+            lon=103.8198,
+            city="Singapore",
+            country_code="SG",
+        )
     )
