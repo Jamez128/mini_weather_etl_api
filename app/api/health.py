@@ -1,20 +1,14 @@
 from fastapi import APIRouter
 from datetime import datetime, timezone
 
-router = APIRouter()
+router = APIRouter(prefix="/health", tags=["health"])
 
-@router.get("/health/live")
-def live() -> dict:
+@router.get("/live")
+def live() -> dict[str, str]:
+    # is the process up?
     return {"status": "ok"}
 
-@router.get("/health/ready")
-def ready() -> dict:
-    # for now: always ready
-    return {
-        "status": "ready",
-        "details": {
-            "external_weather_api_reachable": True, # make real later
-            "timestamp_utc": datetime.now(timezone.utc).isoformat()
-        }
-    }
-# test using `uvicorn app.main:app --reload` in cli
+@router.get("/ready")
+def ready() -> dict[str, str]:
+    # is the service ready to serve traffic?
+    return {"status": "ready"}
